@@ -1,0 +1,10 @@
+{
+  "name": "onw-open",
+  "version": "1.0.0",
+  "description": "一夜終極狼人 開源版本",
+  "scripts": {
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && ts-node index.ts",
+    "install:all": "cd client && npm install && cd ../server && npm install"
+  }
+}
