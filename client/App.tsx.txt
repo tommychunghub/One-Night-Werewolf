@@ -1,0 +1,70 @@
+import { useState } from 'react';
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:3001');
+
+function App() {
+  const [roomId, setRoomId] = useState('');
+  const [isInRoom, setIsInRoom] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const createRoom = () => socket.emit('createRoom');
+  const joinRoom = () => socket.emit('joinRoom', roomId);
+
+  socket.on('roomCreated', (id) => {
+    setRoomId(id);
+    setIsInRoom(true);
+  });
+
+  socket.on('playerJoined', (count) => {
+    setMessage(`目前有 ${count} 位玩家在房間`);
+  });
+
+  socket.on('error', (msg) => {
+    setMessage(msg);
+  });
+
+  return (
+    <div className="min-h-screen bg-zinc-900 text-white flex items-center justify-center">
+      <div className="text-center p-8">
+        <h1 className="text-5xl font-bold mb-8 text-red-500">一夜終極狼人 Open</h1>
+        
+        {!isInRoom ? (
+          <div className="space-y-6">
+            <button 
+              onClick={createRoom} 
+              className="bg-red-600 hover:bg-red-700 px-10 py-5 rounded-2xl text-2xl font-bold"
+            >
+              建立新房間
+            </button>
+            
+            <div className="flex gap-4 justify-center items-center">
+              <input 
+                value={roomId} 
+                onChange={e => setRoomId(e.target.value.toUpperCase())} 
+                placeholder="輸入房間碼 (例如: ABC123)" 
+                className="bg-zinc-800 px-6 py-4 rounded-xl text-xl w-64"
+              />
+              <button 
+                onClick={joinRoom} 
+                className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-xl text-xl"
+              >
+                加入房間
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="text-3xl mb-4">房間碼： <span className="text-yellow-400 font-mono">{roomId}</span></div>
+            <div className="text-xl text-green-400">{message || '等待其他玩家加入...'}</div>
+            <button className="mt-8 bg-green-600 px-8 py-4 rounded-xl text-xl">
+              開始遊戲（等玩家夠多再按）
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default App;

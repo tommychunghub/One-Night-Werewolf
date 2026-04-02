@@ -1,0 +1,57 @@
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, { cors: { origin: "*" } });
+
+interface Room {
+  id: string;
+  players: string[];
+  roles: string[];
+  phase: 'lobby' | 'night' | 'day' | 'vote' | 'result';
+}
+
+const rooms: Map<string, Room> = new Map();
+
+io.on('connection', (socket) => {
+  console.log('玩家連線:', socket.id);
+
+  socket.on('createRoom', () => {
+    const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    rooms.set(roomId, {
+      id: roomId,
+      players: [socket.id],
+      roles: [],
+      phase: 'lobby'
+    });
+    socket.join(roomId);
+    socket.emit('roomCreated', roomId);
+  });
+
+  socket.on('joinRoom', (roomId: string) => {
+    const room = rooms.get(roomId);
+    if (room && room.players.length < 10) {
+      room.players.push(socket.id);
+      socket.join(roomId);
+      io.to(roomId).emit('playerJoined', room.players.length);
+    } else {
+      socket.emit('error', '房間不存在或已滿');
+    }
+  });
+
+  socket.on('startGame', (roomId: string) => {
+    const room = rooms.get(roomId);
+    if (room) {
+      room.phase = 'night';
+      io.to(roomId).emit('gameStarted', { phase: 'night' });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('玩家離線:', socket.id);
+  });
+});
+
+httpServer.listen(3001, () => console.log('✅ 後端已啟動 http://localhost:3001'));
